@@ -1,0 +1,28 @@
+{
+  "id": "industrilasappen",
+  "name": "Industrilåsappen",
+  "short_name": "Industrilås",
+  "description": "Orderkalkyl för montering, kartonger, arbetstider och medarbetare.",
+  "lang": "sv-SE",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#f3f5f2",
+  "theme_color": "#c7ff2f",
+  "categories": ["business", "productivity", "utilities"],
+  "icons": [
+    {
+      "src": "./icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "./icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
