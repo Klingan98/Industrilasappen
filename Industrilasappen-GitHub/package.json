@@ -1,0 +1,10 @@
+{
+  "name": "industrilasappen",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test tests/calculator.test.mjs",
+    "check": "node --check dist/app.js && node --check dist/calculator.js && node --check dist/sw.js"
+  }
+}
