@@ -1041,3 +1041,4 @@ export function settingsAreValid(settings) {
 
   return { valid: true, message: "" };
 }
+ 
