@@ -8,3 +8,4 @@
     "check": "node --check app.js && node --check calculator.js && node --check sw.js"
   }
 }
+ 
