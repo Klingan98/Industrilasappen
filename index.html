@@ -1,0 +1,486 @@
+<!doctype html>
+<html lang="sv">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#c7ff2f" />
+    <meta name="description" content="Prioriteringsstöd för nitning och Rotary: order, operationer, överlämningar och bemanning." />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="Industrilåsappen" />
+    <title>Industrilåsappen</title>
+    <link rel="manifest" href="./manifest.webmanifest" />
+    <link rel="apple-touch-icon" href="./icons/icon-192.png" />
+    <link rel="icon" href="./icons/icon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="./style.css?v=11" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="topbar">
+        <a class="brand" href="./" aria-label="Industrilåsappen, startsida">
+          <span class="brand-mark" aria-hidden="true"><img src="./icons/icon.svg" alt="" /></span>
+          <span class="brand-copy">
+            <strong>Industrilåsappen</strong>
+            <small>Prioritering &amp; orderkalkyl</small>
+          </span>
+        </a>
+        <div class="topbar-actions">
+          <button class="planner-nav-button" id="plannerNavButton" type="button">Orderplanering</button>
+          <button class="icon-button" id="settingsButton" type="button" aria-label="Öppna inställningar">
+            <svg aria-hidden="true" viewBox="0 0 24 24" fill="none">
+              <path d="M12 15.4a3.4 3.4 0 1 0 0-6.8 3.4 3.4 0 0 0 0 6.8Z" />
+              <path d="M19.4 13.1c.1-.4.1-.8.1-1.1s0-.7-.1-1.1l2-1.5-2-3.4-2.4 1a8 8 0 0 0-1.9-1.1L14.8 3h-4l-.4 2.9A8 8 0 0 0 8.6 7L6.1 6l-2 3.4 2.1 1.5a7 7 0 0 0 0 2.2l-2.1 1.5 2 3.4 2.5-1a8 8 0 0 0 1.8 1.1l.4 2.9h4l.3-2.9A8 8 0 0 0 17 17l2.4 1 2-3.4-2-1.5Z" />
+            </svg>
+          </button>
+        </div>
+      </header>
+
+      <main>
+        <section class="view" id="setupView" aria-label="Ny order">
+          <div class="section-heading compact-setup-heading">
+            <span class="local-badge"><span aria-hidden="true"></span>Sparas på enheten</span>
+          </div>
+
+          <div class="setup-grid">
+            <form class="panel order-form" id="orderForm" novalidate>
+              <section class="preset-box field-wide" aria-labelledby="presetHeading">
+                <div class="preset-title-row">
+                  <div>
+                    <span class="field-kicker">Produktmall</span>
+                    <strong id="presetHeading">Preset</strong>
+                  </div>
+                  <button class="text-button" id="savePresetButton" type="button">+ Spara som preset</button>
+                </div>
+                <div class="preset-controls">
+                  <select id="presetSelect" aria-label="Välj sparad preset">
+                    <option value="">Välj sparad preset…</option>
+                  </select>
+                  <button class="quiet-button" id="loadPresetButton" type="button" disabled>Ladda</button>
+                  <button class="danger-link preset-delete" id="deletePresetButton" type="button" disabled>Ta bort</button>
+                </div>
+                <p class="field-help">Sparar kartongstorlek, delmoment, ledtider, momentkapacitet, maskiner/fixturer, tillägg och skiftval. Orderantal, redan utfört arbete och starttid sparas inte.</p>
+              </section>
+
+              <div class="field field-wide">
+                <label for="orderName">Ordernummer eller namn <span>Valfritt</span></label>
+                <input id="orderName" name="orderName" type="text" autocomplete="off" placeholder="Exempel: 45821" />
+              </div>
+
+              <div class="field-row">
+                <div class="field">
+                  <label for="totalQuantity">Antal på ordern</label>
+                  <div class="input-suffix">
+                    <input id="totalQuantity" name="totalQuantity" type="number" min="1" step="1" inputmode="numeric" value="1000" required />
+                    <span>st</span>
+                  </div>
+                </div>
+                <div class="field">
+                  <label for="perCarton">Antal per kartong</label>
+                  <div class="input-suffix">
+                    <input id="perCarton" name="perCarton" type="number" min="1" step="1" inputmode="numeric" value="50" required />
+                    <span>st</span>
+                  </div>
+                </div>
+              </div>
+
+              <section class="field field-wide moments-fieldset" aria-labelledby="momentsHeading">
+                <div class="moments-legend-row">
+                  <strong id="momentsHeading">Delmoment</strong>
+                  <button class="text-button" id="addMomentButton" type="button">+ Lägg till delmoment</button>
+                </div>
+                <div class="moment-editor-list" id="momentEditorList"></div>
+                <p class="field-help">Varje delmoment får egen originalledtid, uppgift om redan utfört arbete och kapacitetsgräns. Du kan ange max antal montörer och en delad maskin/fixtur som orderplaneringen måste respektera.</p>
+              </section>
+
+              <div class="field-row">
+                <div class="field">
+                  <label for="bufferPercent">Indirekt tid</label>
+                  <div class="input-suffix">
+                    <input id="bufferPercent" name="bufferPercent" type="text" inputmode="decimal" value="20" required />
+                    <span>%</span>
+                  </div>
+                </div>
+                <div class="field">
+                  <label for="startDateTime">Starttid</label>
+                  <input id="startDateTime" name="startDateTime" type="datetime-local" required />
+                </div>
+              </div>
+
+              <label class="shift-option" for="includeEveningShift">
+                <input id="includeEveningShift" name="includeEveningShift" type="checkbox" />
+                <span class="shift-option-copy">
+                  <strong>Ta med kvällsskiftet</strong>
+                  <small>Mån–tors 16:00–01:00. Raster speglas från dagskiftet till kvällen.</small>
+                </span>
+              </label>
+              <p class="field-help shift-help">Kvällsskiftet räknas då med i prognos och uppföljning. Avsluta/lägg till medarbetare vid skiftbytet om bemanningen ändras.</p>
+
+              <div class="form-note">
+                <span class="person-chip" aria-hidden="true">1</span>
+                <span>Du börjar ensam. Fler medarbetare kan läggas till när ordern pågår.</span>
+              </div>
+
+              <p class="form-error" id="orderFormError" role="alert" hidden></p>
+              <button class="primary-button start-button" type="submit">
+                <span>Starta order</span>
+                <svg aria-hidden="true" viewBox="0 0 24 24" fill="none"><path d="m9 5 7 7-7 7" /></svg>
+              </button>
+            </form>
+
+            <aside class="panel preview-panel" aria-live="polite">
+              <div class="preview-topline">
+                <span>Orderöversikt</span>
+                <span class="status-pill">1 person</span>
+              </div>
+              <div class="preview-number">
+                <strong id="previewFinish">—</strong>
+                <span>beräknat klar</span>
+              </div>
+              <div class="preview-track"><span id="previewTrack"></span></div>
+              <dl class="preview-stats">
+                <div><dt>Delmoment</dt><dd id="previewCartons">1</dd></div>
+                <div><dt>Tid kvar, original</dt><dd id="previewBaseTime">12 h 30 min</dd></div>
+                <div><dt>Tid kvar + tillägg</dt><dd id="previewBufferedTime">15 h</dd></div>
+              </dl>
+              <p class="schedule-note" id="previewSchedule">Vardagar 07:00–16:00 · raster hoppas över</p>
+            </aside>
+          </div>
+        </section>
+
+        <section class="view active-view" id="activeView" aria-labelledby="activeOrderTitle" hidden>
+          <div class="active-heading">
+            <div>
+              <p class="eyebrow" id="activeOrderEyebrow">Pågående order</p>
+              <h1 id="activeOrderTitle">Order</h1>
+            </div>
+            <button class="quiet-button" id="orderMenuButton" type="button">Orderval</button>
+          </div>
+          <div class="planning-calculator-note"><span>Lokala anteckningar för arbete och takt.</span><button class="quiet-button" id="syncPlanButton" type="button" hidden>Uppdatera kvar att göra i planen</button></div>
+
+          <section class="progress-panel" aria-label="Orderns framsteg">
+            <div class="progress-copy">
+              <span>Färdigt</span>
+              <strong id="progressPercent">0%</strong>
+            </div>
+            <div class="progress-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" id="progressBar">
+              <span id="progressFill"></span>
+            </div>
+            <div class="progress-counts">
+              <span><strong id="doneCount">0/0</strong> moment klara</span>
+              <span><strong id="remainingCount">0</strong> moment återstår</span>
+            </div>
+          </section>
+
+          <div class="metric-grid">
+            <article class="metric-card metric-primary">
+              <span class="metric-label">Prognos klar</span>
+              <strong id="forecastFinish">—</strong>
+              <span class="metric-detail" id="forecastSource">Enligt originalledtid</span>
+            </article>
+            <article class="metric-card">
+              <span class="metric-label">Tid kvar</span>
+              <strong id="timeRemaining">—</strong>
+              <span class="metric-detail">Schemalagd arbetstid</span>
+            </article>
+            <article class="metric-card">
+              <span class="metric-label">Kartonger kvar</span>
+              <strong id="cartonsRemaining">—</strong>
+              <span class="metric-detail" id="cartonDetail">—</span>
+            </article>
+            <article class="metric-card">
+              <span class="metric-label">Aktivt team</span>
+              <strong id="activeTeamCount">1</strong>
+              <span class="metric-detail" id="teamPace">Inväntar första kartongen</span>
+            </article>
+          </div>
+
+          <section class="panel moment-overview-panel" aria-labelledby="momentOverviewTitle">
+            <div class="panel-heading compact">
+              <div><p class="eyebrow">Flöde</p><h2 id="momentOverviewTitle">Momentöversikt</h2></div>
+              <span class="status-pill subtle" id="activeMomentBadge">—</span>
+            </div>
+            <div class="moment-overview-list" id="momentOverviewList"></div>
+          </section>
+
+          <section class="action-panel" aria-labelledby="registerTitle">
+            <div class="panel-heading">
+              <div><p class="eyebrow">Uppdatera</p><h2 id="registerTitle">Registrera framsteg</h2><small class="panel-subtitle" id="registerMomentName">—</small></div>
+              <span class="carton-size" id="cartonSizeLabel">50 st / kartong</span>
+            </div>
+            <div class="main-actions">
+              <button class="carton-button" id="completeCartonButton" type="button">
+                <span class="carton-icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" fill="none"><path d="m4 7 8-4 8 4-8 4-8-4Z" /><path d="m4 7 8 4 8-4v10l-8 4-8-4V7Z" /><path d="M12 11v10" /></svg>
+                </span>
+                <span><strong>Kartong klar</strong><small>Lägg till nästa kartong</small></span>
+                <span class="plus" aria-hidden="true">+</span>
+              </button>
+              <button class="secondary-button" id="addLooseButton" type="button">Lägg till lösa stycken</button>
+            </div>
+            <button class="text-button" id="undoButton" type="button" disabled>Ångra senaste registrering</button>
+          </section>
+
+          <div class="detail-grid">
+            <section class="panel team-panel" aria-labelledby="teamTitle">
+              <div class="panel-heading compact">
+                <div><p class="eyebrow">Bemanning</p><h2 id="teamTitle">Medarbetare</h2></div>
+                <button class="small-add-button" id="addMemberButton" type="button"><span aria-hidden="true">+</span> Lägg till</button>
+              </div>
+              <div class="team-list" id="teamList"></div>
+            </section>
+
+            <section class="panel pace-panel" aria-labelledby="paceTitle">
+              <div class="panel-heading compact">
+                <div><p class="eyebrow">Uppföljning</p><h2 id="paceTitle">Takt</h2><small class="panel-subtitle" id="paceMomentName">—</small></div>
+                <span class="status-pill subtle" id="paceConfidence">Ej startad</span>
+              </div>
+              <dl class="pace-list">
+                <div><dt>Originalledtid</dt><dd id="originalPace">—</dd></div>
+                <div><dt>Faktisk persontid</dt><dd id="actualPace">—</dd></div>
+                <div><dt>Läge mot plan</dt><dd id="paceDelta">—</dd></div>
+                <div><dt>Färdigt före start</dt><dd id="preCompletedDisplay">0 st</dd></div>
+                <div><dt>Kartonger efter start</dt><dd id="completedCartons">0</dd></div>
+              </dl>
+            </section>
+          </div>
+
+          <section class="order-controls">
+            <button class="secondary-button" id="pauseButton" type="button">Pausa order</button>
+            <button class="danger-link" id="finishOrderButton" type="button">Avsluta order</button>
+          </section>
+        </section>
+
+        <section class="view planner-view" id="plannerView" aria-labelledby="plannerTitle" hidden>
+          <div class="planner-heading">
+            <div>
+              <p class="eyebrow">Dagens prioritering</p>
+              <h1 id="plannerTitle">Vad ska vi köra härnäst?</h1>
+              <p class="planner-intro">Separata order, ett sammanhängande flöde. Egna planeringsuppgifter och uppskattningar – inga lagersaldon eller rapportering till Monitor.</p>
+            </div>
+            <span class="local-badge"><span aria-hidden="true"></span>Sparas på enheten</span>
+          </div>
+
+          <section class="panel planning-frame" aria-label="Planeringsram">
+            <div class="planning-frame-inputs">
+              <div class="field"><label for="plannerLine">Planera lina</label><select id="plannerLine"><option value="1">Lina 1</option><option value="2">Lina 2</option><option value="3">Lina 3</option><option value="4" selected>Lina 4</option></select></div>
+              <div class="field"><label for="plannerStartAt">Planera från</label><input id="plannerStartAt" type="datetime-local" /></div>
+              <div class="field"><label for="plannerDayStaff">Personer på dag</label><input id="plannerDayStaff" type="number" min="0" step="1" value="1" /></div>
+              <div class="field"><label for="plannerEveningStaff">Tillgängliga på kväll</label><input id="plannerEveningStaff" type="number" min="0" step="1" value="0" /></div>
+            </div>
+            <div class="planning-frame-footer"><p class="field-help">Bemanningen delas mellan jobben i den valda linans plan. Två maskiner betyder inte två tillgängliga personer. Kväll 0 = ingen kvällsbemanning.</p><button class="text-button" id="plannerNowButton" type="button">Planera från nu</button></div>
+            <p class="form-error" id="plannerConfigError" role="alert" hidden></p>
+            <p class="planning-notice" id="plannerStaleNote" hidden></p>
+          </section>
+
+          <div class="planner-metric-grid">
+            <article class="metric-card metric-primary"><span class="metric-label">Öppna order</span><strong id="plannerOrderCount">0</strong><span class="metric-detail" id="plannerOperationCount">0 operationer</span></article>
+            <article class="metric-card"><span class="metric-label">Kända arbetstimmar kvar</span><strong id="plannerLaborTotal">0 min</strong><span class="metric-detail" id="plannerLaborDetail">uppskattad persontid</span></article>
+            <article class="metric-card"><span class="metric-label">Behöver åtgärd</span><strong id="plannerRiskCount">0</strong><span class="metric-detail" id="plannerRiskDetail">Lägg till order</span></article>
+            <article class="metric-card"><span class="metric-label">Kvällsskift</span><strong id="plannerEveningStatus">–</strong><span class="metric-detail" id="plannerEveningDetail">Lägg till ordrar</span></article>
+          </div>
+
+          <section class="panel next-work-panel" aria-labelledby="nextWorkTitle">
+            <div class="panel-heading compact"><div><p class="eyebrow">Körbara jobb</p><h2 id="nextWorkTitle">Nästa steg per arbetsplats</h2></div><button class="primary-button" id="plannerAddButton" type="button">+ Lägg till order</button></div>
+            <div id="plannerNextWork" class="next-work-grid"></div>
+            <p class="field-help">Första körbara jobbet per arbetsplats. Tidsförslaget nedan visar vilka som ryms samtidigt med er bemanning.</p>
+          </section>
+
+          <section class="panel planner-orders-panel" aria-labelledby="plannedOrdersTitle">
+            <div class="panel-heading compact"><div><p class="eyebrow">Prioriteringsordning</p><h2 id="plannedOrdersTitle">Order &amp; överlämningar</h2></div></div>
+            <div class="queue-filters">
+              <div class="field"><label for="plannerSearch">Sök order eller artikel</label><input id="plannerSearch" type="search" placeholder="Ordernummer, artikel eller benämning" /></div>
+              <div class="field"><label for="plannerResourceFilter">Visa arbetsplats</label><select id="plannerResourceFilter"><option value="">Alla arbetsplatser</option></select></div>
+              <label class="inline-check"><input id="plannerShowComplete" type="checkbox" />Visa klara i planen</label>
+            </div>
+            <p class="field-help" id="plannerFilterNote">Visningsfilter ändrar inte bemanningen eller tidsförslaget för linan.</p>
+            <div class="planned-order-list" id="plannerOrderList"></div>
+          </section>
+
+          <details class="panel planner-editor" id="plannerEditor">
+            <summary>Lägg till eller redigera en order</summary>
+            <form class="planner-order-form" id="plannerOrderForm" novalidate>
+              <div class="panel-heading compact"><h2 id="plannerFormTitle">Lägg till order</h2></div>
+              <div class="field-row">
+                <div class="field"><label for="plannerOrderName">Ordernummer eller namn</label><input id="plannerOrderName" type="text" autocomplete="off" placeholder="Exempel: EDI630389-20" required /></div>
+                <div class="field"><label for="plannerArticle">Artikelnummer <span>Valfritt</span></label><input id="plannerArticle" type="text" placeholder="Exempel: 8-325-400-15" /></div>
+              </div>
+              <div class="field"><label for="plannerDescription">Benämning <span>Valfritt</span></label><input id="plannerDescription" type="text" placeholder="Exempel: Nitad sida vänster eller Rotary höger" /></div>
+              <div class="field-row">
+                <div class="field"><label for="plannerOrderType">Ordertyp</label><select id="plannerOrderType"><option value="unspecified">Välj ordertyp…</option><option value="stock">Lagerstyrd</option><option value="customer">Kundorderstyrd</option></select></div>
+                <div class="field"><label for="plannerOrderLine">Lina</label><select id="plannerOrderLine"><option value="1">Lina 1</option><option value="2">Lina 2</option><option value="3">Lina 3</option><option value="4" selected>Lina 4</option></select></div>
+              </div>
+              <div class="field-row">
+                <div class="field"><label for="plannerQuantity">Antal i planerad körning</label><input id="plannerQuantity" type="number" min="1" step="1" placeholder="st" required /><p class="field-help">Arbetsmängd för denna order. Kvar att göra anges per operation nedan.</p></div>
+                <div class="field"><label for="plannerPerCarton">Antal per kartong</label><input id="plannerPerCarton" type="number" min="1" step="1" value="50" /><p class="field-help">Används om du öppnar orderkalkylen.</p></div>
+              </div>
+              <div class="field-row">
+                <div class="field"><label for="plannerDueKind">Datumet avser</label><select id="plannerDueKind"><option value="plan">Planerat färdigdatum</option><option value="delivery">Kundens leveransdatum</option></select></div>
+                <div class="field"><label for="plannerDeadline">Måldatum <span>Valfritt</span></label><input id="plannerDeadline" type="datetime-local" /><p class="field-help">Planerat färdigdatum i Monitor är inte automatiskt kundens leveransdatum.</p></div>
+              </div>
+              <div class="preset-controls"><div class="field"><label for="plannerPresetSelect">Produktmall <span>Valfritt</span></label><select id="plannerPresetSelect"><option value="">Ange operationerna själv</option></select></div><button class="quiet-button" id="plannerApplyPreset" type="button">Hämta operationer</button></div>
+              <p class="field-help" id="plannerPresetSummary">Du kan lägga upp ordern utan en produktmall.</p>
+              <section class="planning-form-section" aria-labelledby="plannerMomentsTitle">
+                <div class="moments-legend-row"><h3 id="plannerMomentsTitle">Operationer på denna order</h3><button class="text-button" id="plannerAddMoment" type="button">+ Operation</button></div>
+                <p class="field-help">Lägg operationerna i körordning. Op. 10 och 20 hör till ordernumret och kan återkomma på andra order. Ange själv vilket arbete och vilken arbetsplats de avser.</p>
+                <div id="plannerMomentList" class="moment-editor-list"></div>
+                <datalist id="plannerResourceOptions"><option value="260-1"></option><option value="260-2"></option><option value="Rotary slutmontering"></option></datalist>
+                <p class="field-help">Arbetsplatsens namn är en lokal planeringsresurs. 260-1 och 260-2 är separata maskiner i planen; ange den som ska användas. Namnen kan ändras. Tom stycktid ger prioritering utan tidsprognos.</p>
+              </section>
+              <div class="field-row">
+                <div class="field"><label for="plannerBuffer">Indirekt tid (%)</label><input id="plannerBuffer" type="text" inputmode="decimal" value="20" /></div>
+                <div class="field"><label for="plannerPriority">Manuell prioritet</label><select id="plannerPriority"><option value="normal">Normal</option><option value="high">Hög – gå före</option><option value="low">Låg – kan vänta</option></select></div>
+              </div>
+              <div class="field"><label for="plannerReadiness">Kan återstående arbete köras?</label><select id="plannerReadiness"><option value="check">Behöver kontrolleras</option><option value="ready">Ja, när kopplade överlämningar är klara</option><option value="hold">Stoppat – se anteckning</option></select><p class="field-help">Din bedömning av material, underlag och arbetsplats. Inga saldon beräknas.</p></div>
+              <section class="planning-form-section" aria-labelledby="plannerDependenciesTitle">
+                <div class="moments-legend-row"><h3 id="plannerDependenciesTitle">Behövs från andra order</h3><button class="text-button" id="plannerAddDependency" type="button">+ Koppla order</button></div>
+                <p class="field-help">Koppla till exempel en nitorder som behövs före återstående Rotary-arbete. En nitorder kan behövas till flera Rotary-order. Du väljer kopplingen – artikelnumret skapar inget automatiskt beroende.</p>
+                <div id="plannerDependencyList"></div>
+                <p class="field-help">Markera överlämning klar när underlaget räcker för just denna körning, även vid en delöverlämning. Inga stycken reserveras eller dras av.</p>
+              </section>
+              <div class="field"><label for="plannerNote">Anteckning / vad behöver lösas?</label><textarea id="plannerNote" rows="3" placeholder="Exempel: inväntar nitad sida vänster, kontrollera vid nästa överlämning"></textarea></div>
+              <p class="form-error" id="plannerOrderError" role="alert" hidden></p>
+              <div class="planner-form-actions"><button class="quiet-button" id="cancelPlannerEditButton" type="button" hidden>Avbryt redigering</button><button class="primary-button" id="savePlannedOrderButton" type="submit">Lägg till i plan</button></div>
+            </form>
+          </details>
+
+          <section class="panel planner-recommendation-panel" aria-labelledby="plannerScheduleTitle">
+            <div class="panel-heading compact">
+              <div><p class="eyebrow">Uppskattning</p><h2 id="plannerScheduleTitle">Tidsförslag med vald bemanning</h2></div>
+              <span class="status-pill subtle">Räknas om automatiskt</span>
+            </div>
+            <div class="planner-strategy-banner" id="plannerStrategyBanner" hidden></div>
+            <p class="field-help">I tidsförslaget antas väntande överlämningar ske när föregående orders planerade arbete är klart. Körklar-listan ovan kräver att du själv bekräftar överlämningen.</p>
+            <div class="planner-schedule-list" id="plannerScheduleList"></div>
+          </section>
+          <details class="panel planning-help"><summary>Så används prioriteringen</summary><p id="plannerMethodNote">Manuell prioritet först, därefter tidigaste måldatum. En väntande order för över sitt tidigare behov och sin högre prioritet till ordern den behöver. Körklar-status och överlämningar avgör vad som går att starta.</p><p>Operationernas återstående arbetstid summeras. Antal stycken i flera operationer summeras inte till färdiga produkter. Uppgifter sparas lokalt på denna enhet och följer med i säkerhetskopian under inställningar.</p><button class="quiet-button" id="plannerExampleButton" type="button">Prova ett Rotary-exempel</button><button class="text-button" id="plannerRemoveExamples" type="button" hidden>Ta bort exempel</button><p class="field-help" id="plannerExampleNote">Exemplet använder påhittade order, mängder, tider och kopplingar.</p></details>
+        </section>
+      </main>
+    </div>
+
+    <dialog class="modal" id="settingsDialog">
+      <form method="dialog" class="modal-card settings-card" id="settingsForm">
+        <header class="modal-header">
+          <div><p class="eyebrow">Standardvärden</p><h2>Inställningar</h2></div>
+          <button class="icon-button close-button" value="cancel" aria-label="Stäng inställningar" type="submit">×</button>
+        </header>
+
+        <div class="modal-body">
+          <section class="settings-section">
+            <h3>Arbetsdagar</h3>
+            <div class="weekday-picker" id="weekdayPicker">
+              <label><input type="checkbox" value="1" /><span>M</span></label>
+              <label><input type="checkbox" value="2" /><span>T</span></label>
+              <label><input type="checkbox" value="3" /><span>O</span></label>
+              <label><input type="checkbox" value="4" /><span>T</span></label>
+              <label><input type="checkbox" value="5" /><span>F</span></label>
+              <label><input type="checkbox" value="6" /><span>L</span></label>
+              <label><input type="checkbox" value="0" /><span>S</span></label>
+            </div>
+          </section>
+
+          <section class="settings-section">
+            <h3>Arbetstid</h3>
+            <div class="field-row">
+              <div class="field"><label for="workdayStart">Börjar</label><input id="workdayStart" type="time" required /></div>
+              <div class="field"><label for="workdayEnd">Slutar mån–tors</label><input id="workdayEnd" type="time" required /></div>
+            </div>
+            <div class="field friday-time-field">
+              <label for="fridayEnd">Slutar fredag</label>
+              <input id="fridayEnd" type="time" required />
+              <p class="field-help">Standard är 14:00. Kvällsskiftet är ledigt på fredagar.</p>
+            </div>
+            <label class="shift-option" for="fridayNoLunch">
+              <input id="fridayNoLunch" type="checkbox" checked />
+              <span class="shift-option-copy">
+                <strong>Ingen lunchrast på fredag</strong>
+                <small>Den längsta dagsrasten hoppas över på fredagar. De korta rasterna är kvar.</small>
+              </span>
+            </label>
+          </section>
+
+          <section class="settings-section">
+            <div class="settings-title-row"><h3>Raster</h3><button class="text-button" id="addBreakButton" type="button">+ Lägg till rast</button></div>
+            <div class="break-list" id="breakList"></div>
+          </section>
+
+          <section class="settings-section">
+            <h3>Beräkning</h3>
+            <div class="field-row">
+              <div class="field">
+                <label for="defaultBuffer">Standardpåslag</label>
+                <div class="input-suffix"><input id="defaultBuffer" type="text" inputmode="decimal" required /><span>%</span></div>
+              </div>
+              <div class="field">
+                <label for="defaultLeadUnit">Förvald enhet</label>
+                <select id="defaultLeadUnit"><option value="seconds">Sekunder</option><option value="minutes">Minuter</option></select>
+              </div>
+            </div>
+          </section>
+
+          <section class="settings-section install-help">
+            <h3>På iPhone</h3>
+            <p>Öppna sidan i Safari, tryck på Dela och välj <strong>Lägg till på hemskärmen</strong>.</p>
+          </section>
+
+          <p class="form-error" id="settingsError" role="alert" hidden></p>
+        </div>
+
+        <footer class="modal-footer stacked-footer">
+          <div class="data-actions">
+            <button class="text-button" id="exportButton" type="button">Exportera säkerhetskopia</button>
+            <button class="text-button" id="importButton" type="button">Importera</button>
+            <input id="importFile" type="file" accept="application/json" hidden />
+          </div>
+          <div class="footer-actions">
+            <button class="quiet-button" id="resetSettingsButton" type="button">Återställ standard</button>
+            <button class="primary-button" id="saveSettingsButton" type="button">Spara inställningar</button>
+          </div>
+        </footer>
+      </form>
+    </dialog>
+
+    <dialog class="modal" id="memberDialog">
+      <form method="dialog" class="modal-card small-card" id="memberForm">
+        <header class="modal-header">
+          <div><p class="eyebrow">Bemanning</p><h2>Lägg till medarbetare</h2></div>
+          <button class="icon-button close-button" value="cancel" aria-label="Stäng" type="submit">×</button>
+        </header>
+        <div class="modal-body">
+          <div class="field"><label for="memberName">Namn eller initialer</label><input id="memberName" type="text" autocomplete="off" placeholder="Exempel: MA" /></div>
+          <div class="field"><label for="memberStart">Började hjälpa till</label><input id="memberStart" type="datetime-local" required /></div>
+          <p class="form-error" id="memberError" role="alert" hidden></p>
+        </div>
+        <footer class="modal-footer"><button class="quiet-button" value="cancel" type="submit">Avbryt</button><button class="primary-button" id="saveMemberButton" type="button">Lägg till</button></footer>
+      </form>
+    </dialog>
+
+    <dialog class="modal" id="looseDialog">
+      <form method="dialog" class="modal-card small-card" id="looseForm">
+        <header class="modal-header">
+          <div><p class="eyebrow">Framsteg</p><h2>Lösa stycken</h2></div>
+          <button class="icon-button close-button" value="cancel" aria-label="Stäng" type="submit">×</button>
+        </header>
+        <div class="modal-body">
+          <div class="field"><label for="looseQuantity">Antal färdiga stycken</label><div class="input-suffix"><input id="looseQuantity" type="number" min="1" step="1" inputmode="numeric" required /><span>st</span></div></div>
+          <p class="form-error" id="looseError" role="alert" hidden></p>
+        </div>
+        <footer class="modal-footer"><button class="quiet-button" value="cancel" type="submit">Avbryt</button><button class="primary-button" id="saveLooseButton" type="button">Registrera</button></footer>
+      </form>
+    </dialog>
+
+    <dialog class="modal" id="orderMenuDialog">
+      <form method="dialog" class="modal-card small-card">
+        <header class="modal-header">
+          <div><p class="eyebrow">Aktiv order</p><h2>Orderval</h2></div>
+          <button class="icon-button close-button" value="cancel" aria-label="Stäng" type="submit">×</button>
+        </header>
+        <div class="modal-body order-summary" id="orderSummary"></div>
+        <footer class="modal-footer"><button class="quiet-button" value="cancel" type="submit">Stäng</button></footer>
+      </form>
+    </dialog>
+
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+    <script type="module" src="./app.js?v=11"></script>
+  </body>
+</html>
+ 
